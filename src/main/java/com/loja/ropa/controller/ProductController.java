@@ -1,9 +1,11 @@
 package com.loja.ropa.controller;
 
-import com.loja.ropa.dto.ApiResponse;
 import com.loja.ropa.dto.ProductCreateDTO;
 import com.loja.ropa.dto.ProductDTO;
+import com.loja.ropa.dto.ProductUpdateDTO;
 import com.loja.ropa.service.ProductService;
+import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
@@ -11,6 +13,7 @@ import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
 
+@Tag(name = "Produtos", description = "Operações de produtos")
 @RestController
 @RequestMapping("/products")
 public class ProductController {
@@ -21,34 +24,40 @@ public class ProductController {
         this.service = service;
     }
 
-    @PostMapping
-    public ResponseEntity<ApiResponse<ProductDTO>> create(@RequestBody @Valid ProductCreateDTO dto) {
-        ProductDTO created = service.create(dto);
-        return ResponseEntity.status(HttpStatus.CREATED)
-                .body(new ApiResponse<>(201, "Produto criado com sucesso", created));
-    }
-
+    @Operation(summary = "Listar produtos")
     @GetMapping
-    public ResponseEntity<ApiResponse<List<ProductDTO>>> findAll() {
-        List<ProductDTO> products = service.findAll();
-        return ResponseEntity.ok(new ApiResponse<>(200, "Lista de produtos recuperada", products));
+    public ResponseEntity<List<ProductDTO>> listar() {
+        return ResponseEntity.ok(service.findAll());
     }
 
+    @Operation(summary = "Buscar produto por ID")
     @GetMapping("/{id}")
-    public ResponseEntity<ApiResponse<ProductDTO>> findById(@PathVariable Long id) {
-        ProductDTO product = service.findById(id);
-        return ResponseEntity.ok(new ApiResponse<>(200, "Produto encontrado", product));
+    public ResponseEntity<ProductDTO> buscar(@PathVariable Long id) {
+        return ResponseEntity.ok(service.findById(id));
     }
 
+    @Operation(summary = "Cadastrar produto")
+    @PostMapping
+    public ResponseEntity<ProductDTO> criar(
+            @Valid @RequestBody ProductCreateDTO dto) {
+
+        return ResponseEntity.status(HttpStatus.CREATED)
+                .body(service.create(dto));
+    }
+
+    @Operation(summary = "Atualizar produto")
     @PutMapping("/{id}")
-    public ResponseEntity<ApiResponse<ProductDTO>> update(@PathVariable Long id, @RequestBody @Valid ProductCreateDTO dto) {
-        ProductDTO updated = service.update(id, dto);
-        return ResponseEntity.ok(new ApiResponse<>(200, "Produto atualizado com sucesso", updated));
+    public ResponseEntity<ProductDTO> atualizar(
+            @PathVariable Long id,
+            @Valid @RequestBody ProductUpdateDTO dto) {
+
+        return ResponseEntity.ok(service.update(id, dto));
     }
 
+    @Operation(summary = "Excluir produto")
     @DeleteMapping("/{id}")
-    public ResponseEntity<ApiResponse<Void>> delete(@PathVariable Long id) {
+    public ResponseEntity<Void> excluir(@PathVariable Long id) {
         service.delete(id);
-        return ResponseEntity.ok(new ApiResponse<>(200, "Produto removido com sucesso", null));
+        return ResponseEntity.noContent().build();
     }
 }

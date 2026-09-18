@@ -2,15 +2,21 @@ package com.loja.ropa.service;
 
 import com.loja.ropa.dto.ProductCreateDTO;
 import com.loja.ropa.dto.ProductDTO;
+import com.loja.ropa.dto.ProductUpdateDTO;
 import com.loja.ropa.exception.ResourceNotFoundException;
 import com.loja.ropa.model.Product;
 import com.loja.ropa.repository.ProductRepository;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 import java.util.List;
 
 @Service
 public class ProductService {
+
+    private static final Logger log = LoggerFactory.getLogger(ProductService.class);
 
     private final ProductRepository repository;
 
@@ -18,7 +24,11 @@ public class ProductService {
         this.repository = repository;
     }
 
+    @Transactional
     public ProductDTO create(ProductCreateDTO dto) {
+
+        log.info("Criando produto: {}", dto.name());
+
         Product product = Product.builder()
                 .name(dto.name())
                 .category(dto.category())
@@ -26,25 +36,49 @@ public class ProductService {
                 .price(dto.price())
                 .stock(dto.stock())
                 .build();
+
         Product saved = repository.save(product);
+
+        log.info("Produto criado com ID {}", saved.getId());
+
         return toDTO(saved);
     }
 
     public List<ProductDTO> findAll() {
-        return repository.findAll().stream()
+
+        log.info("Listando todos os produtos");
+
+        return repository.findAll()
+                .stream()
                 .map(this::toDTO)
                 .toList();
     }
 
     public ProductDTO findById(Long id) {
+
+        log.info("Buscando produto {}", id);
+
         Product product = repository.findById(id)
-                .orElseThrow(() -> new ResourceNotFoundException("Produto não encontrado com ID: " + id));
+                .orElseThrow(() -> {
+                    log.error("Produto {} não encontrado", id);
+                    return new ResourceNotFoundException(
+                            "Produto não encontrado com ID: " + id);
+                });
+
         return toDTO(product);
     }
 
-    public ProductDTO update(Long id, ProductCreateDTO dto) {
+    @Transactional
+    public ProductDTO update(Long id, ProductUpdateDTO dto) {
+
+        log.info("Atualizando produto {}", id);
+
         Product product = repository.findById(id)
-                .orElseThrow(() -> new ResourceNotFoundException("Produto não encontrado com ID: " + id));
+                .orElseThrow(() -> {
+                    log.error("Produto {} não encontrado", id);
+                    return new ResourceNotFoundException(
+                            "Produto não encontrado com ID: " + id);
+                });
 
         product.setName(dto.name());
         product.setCategory(dto.category());
@@ -53,14 +87,26 @@ public class ProductService {
         product.setStock(dto.stock());
 
         Product updated = repository.save(product);
+
+        log.info("Produto {} atualizado com sucesso", id);
+
         return toDTO(updated);
     }
 
+    @Transactional
     public void delete(Long id) {
+
+        log.warn("Removendo produto {}", id);
+
         if (!repository.existsById(id)) {
-            throw new ResourceNotFoundException("Produto não encontrado com ID: " + id);
+            log.error("Produto {} não encontrado para exclusão", id);
+            throw new ResourceNotFoundException(
+                    "Produto não encontrado com ID: " + id);
         }
+
         repository.deleteById(id);
+
+        log.info("Produto {} removido", id);
     }
 
     private ProductDTO toDTO(Product product) {
